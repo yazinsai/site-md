@@ -1,0 +1,9 @@
+{
+  "/api/next_md/[...path]/route": "app/api/next_md/[...path]/route.js",
+  "/api/something/route": "app/api/something/route.js",
+  "/docs/page": "app/docs/page.js",
+  "/page": "app/page.js",
+  "/echo/page": "app/echo/page.js",
+  "/protected/page": "app/protected/page.js",
+  "/random/page": "app/random/page.js"
+}

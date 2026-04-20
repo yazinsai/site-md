@@ -1,0 +1,19 @@
+{
+  "name": "next-md-fixture-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3111",
+    "build": "next build",
+    "start": "next start -p 3111"
+  },
+  "dependencies": {
+    "next": "^15.5.15",
+    "next-md": "file:../..",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.14"
+  }
+}

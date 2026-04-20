@@ -1,0 +1,62 @@
+{
+  "name": "next-md",
+  "version": "0.1.0",
+  "description": "Serve clean markdown from Next.js pages for AI agents",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./proxy": {
+      "types": "./dist/proxy.d.ts",
+      "import": "./dist/proxy.js",
+      "require": "./dist/proxy.cjs"
+    },
+    "./handler": {
+      "types": "./dist/handler.d.ts",
+      "import": "./dist/handler.js",
+      "require": "./dist/handler.cjs"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.js",
+      "require": "./dist/config.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run --exclude tests/integration.fixture.test.ts",
+    "test:watch": "vitest",
+    "test:integration": "vitest run tests/integration.fixture.test.ts"
+  },
+  "dependencies": {
+    "@joplin/turndown-plugin-gfm": "^1.0.12",
+    "@mozilla/readability": "^0.6.0",
+    "jsdom": "^25.0.0",
+    "lru-cache": "^11.0.0",
+    "turndown": "^7.2.4"
+  },
+  "peerDependencies": {
+    "next": ">=14.0.0"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^28.0.1",
+    "@types/node": "^24.6.0",
+    "@types/turndown": "^5.0.6",
+    "next": "^15.5.5",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
