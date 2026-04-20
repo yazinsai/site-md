@@ -59,11 +59,13 @@ export const config = {
 };
 ```
 
-**`app/api/__site_md/[...path]/route.ts`**
+**`app/api/site-md/[...path]/route.ts`**
 
 ```ts
 export { GET } from "site-md/handler";
 ```
+
+> **Do not** put this under `app/api/__site_md/...` or any folder starting with `_`. The Next.js App Router treats underscore-prefixed folders as [private folders](https://nextjs.org/docs/app/getting-started/project-structure#private-folders) and won't register routes inside them.
 
 That's it. Restart your dev server and try:
 
@@ -80,7 +82,12 @@ curl -H "Accept: text/markdown" http://localhost:3000/
 Copy the block below verbatim into Claude Code, Cursor, or any coding agent. It will set up site-md end-to-end and verify it works.
 
 ````markdown
-Install `site-md` in this Next.js app so AI agents and crawlers get clean Markdown versions of our pages. Do all of the following:
+Install `site-md` in this Next.js app so AI agents and crawlers get clean Markdown versions of our pages. Follow every step below and debug any failure before declaring success.
+
+**Critical gotchas — read before you start:**
+- The route folder **must be `site-md`** (the package default). Do not put it under `app/api/__site_md/...` or any folder starting with `_` — Next.js App Router treats any `_`-prefixed folder as a [private folder](https://nextjs.org/docs/app/getting-started/project-structure#private-folders) and silently excludes it from routing. Symptom: `/index.md` returns 307/404 or HTML from your `not-found.tsx`.
+- If `next.config.*` already exists, **edit it in place** — do not overwrite. Read it first, add the `withNextMd` import, and wrap the existing export. Match the existing file extension; if unsure, prefer `.mjs` (Next.js < 15 does not load `next.config.ts`).
+- If a `README.md` already exists, **append** a short section — do not overwrite.
 
 1. Install the package:
    - Detect the package manager (pnpm, npm, yarn, bun) by checking for lockfiles.
@@ -100,7 +107,7 @@ Install `site-md` in this Next.js app so AI agents and crawlers get clean Markdo
 
    If a `middleware.ts` already exists, merge the import and export `proxy as middleware` so both run. Ask me if the merge is ambiguous.
 
-3. Create `app/api/__site_md/[...path]/route.ts` (use `src/app/...` if this project uses `src/`):
+3. Create `app/api/site-md/[...path]/route.ts` (use `src/app/...` if this project uses `src/`). The folder name is `site-md` — **not** `__site_md`:
 
    ```ts
    export { GET } from "site-md/handler";
@@ -124,16 +131,18 @@ Install `site-md` in this Next.js app so AI agents and crawlers get clean Markdo
    );
    ```
 
-5. Verify it works:
+   If `next.config.ts` fails to load (older Next versions), rename to `next.config.mjs` and keep the same contents.
+
+5. Verify it works. Restart the dev server after creating/editing any of the files above — middleware and config are not hot-reloaded.
    - Start the dev server in the background.
-   - `curl -s -o /dev/null -w "%{http_code} %{content_type}\n" http://localhost:3000/` → expect HTML.
-   - `curl -s -o /dev/null -w "%{http_code} %{content_type}\n" http://localhost:3000/index.md` → expect `text/markdown`.
-   - `curl -s http://localhost:3000/llms.txt | head -5` → expect a Markdown index.
-   - If any check fails, read the route and middleware files, fix the issue, and re-run.
+   - `curl -s -o /dev/null -w "%{http_code} %{content_type}\n" http://localhost:3000/` → expect `200 text/html`.
+   - `curl -s -o /dev/null -w "%{http_code} %{content_type}\n" http://localhost:3000/index.md` → expect `200 text/markdown`.
+   - `curl -s http://localhost:3000/llms.txt | head -5` → expect a Markdown index starting with `# <my site name>`.
+   - If `/index.md` returns HTML or a 307: the route folder name starts with `_` (rename to `site-md`), `internalRoutePrefix` doesn't match the folder, or the dev server wasn't restarted. Fix and re-run — do not declare success until all three checks pass.
 
-6. Add a short note to the README (or create one) telling maintainers that agent traffic is served Markdown via site-md, and link to https://github.com/yazinsai/md-site.
+6. Add a short note to the README (append — do not overwrite) telling maintainers that agent traffic is served Markdown via site-md, and link to https://github.com/yazinsai/site-md.
 
-Report back with: package manager used, files created/modified, and the output of the three curl checks.
+Report back with: package manager used, every file created/modified (full paths), and the raw output of the three curl checks.
 ````
 
 ---
@@ -193,13 +202,15 @@ Each bot category accepts one of:
 
 ### Changing the internal route prefix
 
-If you set `internalRoutePrefix: "site_md"`, your route folder must match:
+`internalRoutePrefix` must match your route folder:
 
 ```
-app/api/site_md/[...path]/route.ts
+app/api/<internalRoutePrefix>/[...path]/route.ts
 ```
 
-The default prefix is `__site_md`.
+The default prefix is `site-md`.
+
+**Never start this name with an underscore.** Next.js App Router treats `_`-prefixed folders as private and silently excludes them from routing, so `__site_md`, `_md`, etc. will 404. Safe choices: `site-md`, `site_md`, `md`.
 
 ---
 
@@ -241,8 +252,10 @@ The default prefix is `__site_md`.
 - Does the matcher include the path you're testing?
 - Try `curl http://localhost:3000/index.md` — if that works but `Accept: text/markdown` doesn't, the issue is the header, not the route.
 
-**404 on rewritten requests.**
-- Check that the route folder name matches `internalRoutePrefix`. Default is `__site_md`, so the path is `app/api/__site_md/[...path]/route.ts`.
+**404, 307, or HTML on `/index.md`.**
+- Your route folder name starts with `_` (e.g. `__site_md`). Next.js App Router treats any `_`-prefixed folder as private and won't register routes inside it. Rename the folder to something like `site-md` and set `internalRoutePrefix: "site-md"` in `withNextMd` to match.
+- Or: `internalRoutePrefix` doesn't match the folder name. They must be identical.
+- Restart the dev server — middleware and `next.config` are not hot-reloaded.
 
 **`/llms.txt` is empty.**
 - Set `llmsTxt.sitemapUrl` (defaults to `/sitemap.xml`) or provide `llmsTxt.pages` explicitly.

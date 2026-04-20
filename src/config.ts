@@ -36,7 +36,7 @@ export function withNextMd<T extends Record<string, any>>(
   }
   process.env.SITE_MD_CONFIG = serializeConfig(nextMdConfig);
 
-  const routePrefix = nextMdConfig.internalRoutePrefix ?? "__site_md";
+  const routePrefix = nextMdConfig.internalRoutePrefix ?? "site-md";
   const missingBypass = [{ type: "header", key: "x-site-md-internal" }];
 
   const previousRewrites = nextConfig.rewrites;

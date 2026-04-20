@@ -8,7 +8,7 @@ describe("proxy", () => {
     const response = proxy(request);
     expect(response).toBeTruthy();
     expect(response?.headers.get("x-middleware-rewrite")).toContain(
-      "/api/__site_md/docs",
+      "/api/site-md/docs",
     );
   });
 

@@ -147,7 +147,7 @@ export function resolveConfig(input?: NextMdConfig): ResolvedNextMdConfig {
       cacheTTL: merged.llmsTxt?.cacheTTL ?? 3600,
       maxPages: merged.llmsTxt?.maxPages ?? 100,
     },
-    internalRoutePrefix: merged.internalRoutePrefix ?? "__site_md",
+    internalRoutePrefix: merged.internalRoutePrefix ?? "site-md",
     bypassSecret,
   };
 }
