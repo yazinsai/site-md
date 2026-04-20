@@ -1,8 +1,26 @@
 {
   "name": "site-md",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Serve clean markdown from Next.js pages for AI agents",
   "license": "MIT",
+  "homepage": "https://github.com/yazinsai/site-md#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yazinsai/site-md.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yazinsai/site-md/issues"
+  },
+  "keywords": [
+    "nextjs",
+    "markdown",
+    "llms.txt",
+    "ai-agents",
+    "crawler",
+    "llm",
+    "seo",
+    "content-negotiation"
+  ],
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
