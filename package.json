@@ -1,6 +1,6 @@
 {
   "name": "site-md",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Serve clean markdown from Next.js pages for AI agents",
   "license": "MIT",
   "homepage": "https://github.com/yazinsai/site-md#readme",
@@ -25,6 +25,9 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "site-md": "./dist/cli.cjs"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -67,12 +70,17 @@
     "next": ">=14.0.0"
   },
   "devDependencies": {
+    "@babel/parser": "^7.29.2",
+    "@babel/types": "^7.29.0",
+    "@clack/prompts": "^1.2.0",
     "@types/jsdom": "^28.0.1",
     "@types/node": "^24.6.0",
     "@types/turndown": "^5.0.6",
     "next": "^15.5.5",
+    "picocolors": "^1.1.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "recast": "^0.23.11",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"

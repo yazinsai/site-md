@@ -9,7 +9,7 @@
   <br/>
   Your human visitors keep getting HTML. AI agents get fast, clean Markdown of the same pages.
   <br/>
-  No content duplication. No rewrites. Just drop in two files.
+  <code>npx site-md</code> — installs, wires up middleware, merges your next.config. No content duplication. No rewrites.
 </p>
 
 <p align="center">
@@ -22,8 +22,7 @@
 </p>
 
 <p align="center">
-  <a href="#install-in-60-seconds">Install</a> ·
-  <a href="#let-claude-code-or-any-agent-install-it-for-you">Agent install</a> ·
+  <a href="#install-in-one-command">Install</a> ·
   <a href="#how-detection-works">How it works</a> ·
   <a href="#configuration-optional">Config</a> ·
   <a href="#troubleshooting">Troubleshooting</a>
@@ -39,15 +38,39 @@ GET /docs   Accept: text/markdown   →  # Docs …         (agents)
 
 ---
 
-## Install in 60 seconds
+## Install in one command
 
 ```bash
-pnpm add site-md     # or npm i site-md / yarn add site-md
+npx site-md
 ```
 
-Then create these **two files** in your Next.js app:
+That's it. The CLI detects your package manager (pnpm / npm / yarn / bun) and `src/` layout, installs `site-md`, and wires up everything:
 
-**`middleware.ts`** (project root)
+- Writes `middleware.ts` — or AST-merges into your existing one, preserving your logic and matcher.
+- Writes `app/api/site-md/[...path]/route.ts`.
+- Wraps your `next.config.{ts,mjs,js,cjs}` with `withNextMd` — or creates one if absent.
+
+Then restart your dev server and try:
+
+```bash
+curl http://localhost:3000/               # HTML
+curl http://localhost:3000/index.md       # Markdown
+curl http://localhost:3000/llms.txt       # Markdown site index
+```
+
+### Non-interactive mode
+
+For CI or agent scripts:
+
+```bash
+npx site-md --title "My Site" --description "Public docs for AI agents" --yes
+```
+
+### Manual install
+
+If you'd rather wire it up yourself, the CLI's output is just these three files:
+
+**`middleware.ts`** (or `src/middleware.ts`)
 
 ```ts
 export { proxy as middleware } from "site-md/proxy";
@@ -65,85 +88,25 @@ export const config = {
 export { GET } from "site-md/handler";
 ```
 
-> **Do not** put this under `app/api/__site_md/...` or any folder starting with `_`. The Next.js App Router treats underscore-prefixed folders as [private folders](https://nextjs.org/docs/app/getting-started/project-structure#private-folders) and won't register routes inside them.
+**`next.config.mjs`** (optional — enables `/llms.txt` and `/llms-full.txt`)
 
-That's it. Restart your dev server and try:
+```ts
+import { withNextMd } from "site-md/config";
 
-```bash
-curl http://localhost:3000/               # HTML
-curl http://localhost:3000/index.md       # Markdown
-curl -H "Accept: text/markdown" http://localhost:3000/
+export default withNextMd(
+  {
+    /* your existing config */
+  },
+  {
+    llmsTxt: {
+      title: "My Site",
+      description: "Public docs for AI agents",
+    },
+  },
+);
 ```
 
----
-
-## Let Claude Code (or any agent) install it for you
-
-Copy the block below verbatim into Claude Code, Cursor, or any coding agent. It will set up site-md end-to-end and verify it works.
-
-````markdown
-Install `site-md` in this Next.js app so AI agents and crawlers get clean Markdown versions of our pages. Follow every step below and debug any failure before declaring success.
-
-**Critical gotchas — read before you start:**
-- The route folder **must be `site-md`** (the package default). Do not put it under `app/api/__site_md/...` or any folder starting with `_` — Next.js App Router treats any `_`-prefixed folder as a [private folder](https://nextjs.org/docs/app/getting-started/project-structure#private-folders) and silently excludes it from routing. Symptom: `/index.md` returns 307/404 or HTML from your `not-found.tsx`.
-- If `next.config.*` already exists, **edit it in place** — do not overwrite. Read it first, add the `withNextMd` import, and wrap the existing export. Match the existing file extension; if unsure, prefer `.mjs` (Next.js < 15 does not load `next.config.ts`).
-- If a `README.md` already exists, **append** a short section — do not overwrite.
-
-1. Install the package:
-   - Detect the package manager (pnpm, npm, yarn, bun) by checking for lockfiles.
-   - Run the install command, e.g. `pnpm add site-md`.
-
-2. Create `middleware.ts` at the project root (or `src/middleware.ts` if this project uses `src/`). Use this exact content:
-
-   ```ts
-   export { proxy as middleware } from "site-md/proxy";
-
-   export const config = {
-     matcher: [
-       "/((?!api|_next|static|favicon.ico|.*\\.(?:js|css|json|xml|txt|map|webmanifest|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$).*)",
-     ],
-   };
-   ```
-
-   If a `middleware.ts` already exists, merge the import and export `proxy as middleware` so both run. Ask me if the merge is ambiguous.
-
-3. Create `app/api/site-md/[...path]/route.ts` (use `src/app/...` if this project uses `src/`). The folder name is `site-md` — **not** `__site_md`:
-
-   ```ts
-   export { GET } from "site-md/handler";
-   ```
-
-4. (Optional) Wrap `next.config.{ts,js,mjs}` with `withNextMd` so `/llms.txt` and `/llms-full.txt` are wired up and the bypass secret is generated:
-
-   ```ts
-   import { withNextMd } from "site-md/config";
-
-   export default withNextMd(
-     {
-       // existing next config here
-     },
-     {
-       llmsTxt: {
-         title: "<my site name>",
-         description: "<one-line site description>",
-       },
-     },
-   );
-   ```
-
-   If `next.config.ts` fails to load (older Next versions), rename to `next.config.mjs` and keep the same contents.
-
-5. Verify it works. Restart the dev server after creating/editing any of the files above — middleware and config are not hot-reloaded.
-   - Start the dev server in the background.
-   - `curl -s -o /dev/null -w "%{http_code} %{content_type}\n" http://localhost:3000/` → expect `200 text/html`.
-   - `curl -s -o /dev/null -w "%{http_code} %{content_type}\n" http://localhost:3000/index.md` → expect `200 text/markdown`.
-   - `curl -s http://localhost:3000/llms.txt | head -5` → expect a Markdown index starting with `# <my site name>`.
-   - If `/index.md` returns HTML or a 307: the route folder name starts with `_` (rename to `site-md`), `internalRoutePrefix` doesn't match the folder, or the dev server wasn't restarted. Fix and re-run — do not declare success until all three checks pass.
-
-6. Add a short note to the README (append — do not overwrite) telling maintainers that agent traffic is served Markdown via site-md, and link to https://github.com/yazinsai/site-md.
-
-Report back with: package manager used, every file created/modified (full paths), and the raw output of the three curl checks.
-````
+> Do not use a folder starting with `_` (e.g. `__site_md`) for the route — Next.js App Router treats [underscore-prefixed folders](https://nextjs.org/docs/app/getting-started/project-structure#private-folders) as private and silently excludes them from routing.
 
 ---
 
