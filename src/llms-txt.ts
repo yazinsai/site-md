@@ -112,8 +112,8 @@ export async function generateLlmsFullTxt(params: {
         params.fetchImpl(pageUrl, {
           headers: {
             accept: "text/html",
-            "user-agent": "next-md-internal/1.0",
-            "x-next-md-internal": params.bypassSecret,
+            "user-agent": "site-md-internal/1.0",
+            "x-site-md-internal": params.bypassSecret,
           },
         }),
         10_000,

@@ -26,7 +26,7 @@ function passthrough(pathname: string, input: DetectionInput): boolean {
 }
 
 export function detectRequest(input: DetectionInput): DetectionResult {
-  const internalHeader = input.headers.get("x-next-md-internal");
+  const internalHeader = input.headers.get("x-site-md-internal");
   if (internalHeader && internalHeader === input.config.bypassSecret) {
     return {
       detected: false,

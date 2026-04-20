@@ -13,7 +13,7 @@ function markdownResponse(markdown: string, status = 200): Response {
     headers: {
       "content-type": "text/markdown; charset=utf-8",
       vary: "Accept, User-Agent",
-      "x-content-source": "next-md",
+      "x-content-source": "site-md",
     },
   });
 }
@@ -93,8 +93,8 @@ export function createNextMdHandler(configInput?: NextMdConfig, deps?: HandlerDe
       headers: {
         accept: "text/html",
         "accept-language": lang ?? "",
-        "user-agent": "next-md-internal/1.0",
-        "x-next-md-internal": config.bypassSecret,
+        "user-agent": "site-md-internal/1.0",
+        "x-site-md-internal": config.bypassSecret,
       },
       redirect: "manual",
     });
@@ -117,7 +117,7 @@ export function createNextMdHandler(configInput?: NextMdConfig, deps?: HandlerDe
         headers: {
           "content-type": "text/markdown; charset=utf-8",
           vary: "Accept, User-Agent",
-          "x-content-source": "next-md",
+          "x-content-source": "site-md",
         },
       });
     }

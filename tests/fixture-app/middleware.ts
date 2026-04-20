@@ -1,4 +1,4 @@
-export { proxy as middleware } from "next-md/proxy";
+export { proxy as middleware } from "site-md/proxy";
 
 export const config = {
   matcher: [

@@ -1,5 +1,5 @@
 {
-  "name": "next-md-fixture-app",
+  "name": "site-md-fixture-app",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "next": "^15.5.15",
-    "next-md": "file:../..",
+    "site-md": "file:../..",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },

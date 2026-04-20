@@ -31,13 +31,13 @@ export function withNextMd<T extends Record<string, any>>(
   nextConfig: T,
   nextMdConfig: NextMdConfig = {},
 ): T {
-  if (!process.env.NEXT_MD_BYPASS_SECRET) {
-    process.env.NEXT_MD_BYPASS_SECRET = crypto.randomBytes(32).toString("hex");
+  if (!process.env.SITE_MD_BYPASS_SECRET) {
+    process.env.SITE_MD_BYPASS_SECRET = crypto.randomBytes(32).toString("hex");
   }
-  process.env.NEXT_MD_CONFIG = serializeConfig(nextMdConfig);
+  process.env.SITE_MD_CONFIG = serializeConfig(nextMdConfig);
 
-  const routePrefix = nextMdConfig.internalRoutePrefix ?? "__next_md";
-  const missingBypass = [{ type: "header", key: "x-next-md-internal" }];
+  const routePrefix = nextMdConfig.internalRoutePrefix ?? "__site_md";
+  const missingBypass = [{ type: "header", key: "x-site-md-internal" }];
 
   const previousRewrites = nextConfig.rewrites;
   const injected = [

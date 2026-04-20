@@ -1,4 +1,6 @@
-# next-md
+# site-md
+
+Repository: `github.com/yazinsai/md-site`
 
 Serve clean Markdown from your Next.js pages for AI agents and crawlers.
 
@@ -9,7 +11,7 @@ Your normal users still get regular HTML. Agent traffic gets content-focused Mar
 ## Why this exists
 
 Most AI agents fetch fully hydrated HTML pages with lots of script/layout noise.
-`next-md` gives them cleaner content automatically:
+`site-md` gives them cleaner content automatically:
 
 - Detects agent requests (`Accept`, User-Agent, `.md`, `?format=md`, etc.)
 - Rewrites those requests to an internal route
@@ -24,7 +26,7 @@ No big app rewrite. Just wire in 2 files.
 ## Install
 
 ```bash
-pnpm add next-md
+pnpm add site-md
 ```
 
 ---
@@ -36,7 +38,7 @@ pnpm add next-md
 Create `middleware.ts` (recommended) or `proxy.ts` in your app root:
 
 ```ts
-export { proxy as middleware } from "next-md/proxy";
+export { proxy as middleware } from "site-md/proxy";
 
 export const config = {
   matcher: [
@@ -47,10 +49,10 @@ export const config = {
 
 ### 2) Add the internal API route
 
-Create `app/api/next_md/[...path]/route.ts`:
+Create `app/api/site_md/[...path]/route.ts`:
 
 ```ts
-export { GET } from "next-md/handler";
+export { GET } from "site-md/handler";
 ```
 
 That is enough to start serving Markdown for agent-style requests.
@@ -62,14 +64,14 @@ That is enough to start serving Markdown for agent-style requests.
 Use `withNextMd` in `next.config.ts` if you want custom cache behavior, bot policy, llms files, etc.
 
 ```ts
-import { withNextMd } from "next-md/config";
+import { withNextMd } from "site-md/config";
 
 export default withNextMd(
   {
     reactStrictMode: true,
   },
   {
-    internalRoutePrefix: "next_md",
+    internalRoutePrefix: "site_md",
     cacheTTL: 600,
     passthrough: ["/admin/*", "/dashboard/*"],
     stripSelectors: [".cookie-banner"],
@@ -94,7 +96,7 @@ export default withNextMd(
 
 ## Detection methods (first match wins)
 
-`next-md` can trigger Markdown mode using:
+`site-md` can trigger Markdown mode using:
 
 1. Internal bypass header (used for safe self-fetch)
 2. `/llms.txt` and `/llms-full.txt`
@@ -129,7 +131,7 @@ Markdown responses include:
 
 - `Content-Type: text/markdown; charset=utf-8`
 - `Vary: Accept, User-Agent`
-- `X-Content-Source: next-md`
+- `X-Content-Source: site-md`
 
 ---
 
@@ -152,10 +154,10 @@ Markdown responses include:
 
 ## Package exports
 
-- `next-md/proxy` - request detection + rewrite layer
-- `next-md/handler` - HTML to Markdown conversion route handler
-- `next-md/config` - `withNextMd()` helper
-- `next-md` - full re-exports
+- `site-md/proxy` - request detection + rewrite layer
+- `site-md/handler` - HTML to Markdown conversion route handler
+- `site-md/config` - `withNextMd()` helper
+- `site-md` - full re-exports
 
 ---
 
@@ -175,7 +177,7 @@ pnpm build
 ### I get 404 for rewritten requests
 
 - Make sure the internal route exists:
-  `app/api/next_md/[...path]/route.ts`
+  `app/api/site_md/[...path]/route.ts`
 - Make sure `internalRoutePrefix` matches the folder name.
 
 ### Agents still receive HTML

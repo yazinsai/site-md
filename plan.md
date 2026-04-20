@@ -1,4 +1,4 @@
-# Plan: `next-md` npm package
+# Plan: `site-md` npm package
 
 ## Context
 
@@ -6,7 +6,7 @@ AI agents hitting Next.js sites get hydrated HTML full of scripts and layout noi
 
 **Competition**: `accept.md` handles Accept headers only. Vercel has a template but it's DIY. Our package covers the full detection cascade + automatic conversion + llms.txt generation + bot-category policy in one install.
 
-**Name**: `next-md` (old Material Design package, zero dependents, 5 years stale — disputable). Fallback: `nextjs-md`.
+**Name**: `site-md`.
 
 ---
 
@@ -15,10 +15,10 @@ AI agents hitting Next.js sites get hydrated HTML full of scripts and layout noi
 **Why two layers**: Detection is lightweight (string matching). Conversion is heavy (DOM parsing + Readability + Turndown, requires Node.js). Separating them means human traffic never pays the conversion cost.
 
 ```
-Request → proxy.ts (detection) → agent? → rewrite to /api/__next_md/[...path]
+Request → proxy.ts (detection) → agent? → rewrite to /api/__site_md/[...path]
                                 → human? → pass through unchanged
 
-/api/__next_md/[...path] → self-fetch original page as HTML
+/api/__site_md/[...path] → self-fetch original page as HTML
                          → Readability + Turndown → markdown response
 ```
 
@@ -28,11 +28,11 @@ Request → proxy.ts (detection) → agent? → rewrite to /api/__next_md/[...pa
 
 **Solution**: Deployment-wide secret via environment variable.
 
-1. `withNextMd()` generates a random secret at build time → `process.env.NEXT_MD_BYPASS_SECRET`
-2. The handler attaches it as `x-next-md-internal: <secret>` on every self-fetch
+1. `withNextMd()` generates a random secret at build time → `process.env.SITE_MD_BYPASS_SECRET`
+2. The handler attaches it as `x-site-md-internal: <secret>` on every self-fetch
 3. The proxy checks for it first — if present and matches, skip detection entirely
-4. The `withNextMd()` rewrites also use `missing: [{ type: 'header', key: 'x-next-md-internal' }]` so rewrite rules don't match internal fetches
-5. If user doesn't use `withNextMd()`, the secret falls back to `process.env.NEXT_MD_SECRET` (user sets it manually) or a hardcoded default with a console warning
+4. The `withNextMd()` rewrites also use `missing: [{ type: 'header', key: 'x-site-md-internal' }]` so rewrite rules don't match internal fetches
+5. If user doesn't use `withNextMd()`, the secret falls back to `process.env.SITE_MD_SECRET` (user sets it manually) or a hardcoded default with a console warning
 
 This works across processes because env vars are deployment-wide and consistent.
 
@@ -40,7 +40,7 @@ This works across processes because env vars are deployment-wide and consistent.
 
 Self-fetch requests are explicitly scoped to **public page content**:
 - Strip all cookies from the self-fetch request
-- Set `Accept: text/html` and a neutral User-Agent (`next-md-internal/1.0`)
+- Set `Accept: text/html` and a neutral User-Agent (`site-md-internal/1.0`)
 - Do not forward `Authorization` or session headers
 - Forward `Accept-Language` from the original request (so locale-aware pages render correctly)
 - Cache key includes the path + `Accept-Language` value to avoid locale cross-contamination
@@ -48,27 +48,27 @@ Self-fetch requests are explicitly scoped to **public page content**:
 
 ---
 
-## User Setup (after `npm install next-md`)
+## User Setup (after `npm install site-md`)
 
 ### Minimal (2 files, ~6 lines)
 
 **`proxy.ts`** (or `middleware.ts` for Next.js 14-15):
 ```ts
-export { proxy } from 'next-md/proxy'
+export { proxy } from 'site-md/proxy'
 export const config = {
   matcher: ['/((?!api|_next|static|favicon.ico|.*\\.(?:js|css|json|xml|txt|map|webmanifest|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$).*)'],
 }
 ```
 
-**`app/api/__next_md/[...path]/route.ts`**:
+**`app/api/__site_md/[...path]/route.ts`**:
 ```ts
-export { GET } from 'next-md/handler'
+export { GET } from 'site-md/handler'
 ```
 
 ### Advanced (add `next.config.ts` for config + rewrites)
 
 ```ts
-import { withNextMd } from 'next-md/config'
+import { withNextMd } from 'site-md/config'
 export default withNextMd({ /* existing config */ }, {
   cacheTTL: 600,
   passthrough: ['/admin/*', '/dashboard/*'],
@@ -87,7 +87,7 @@ export default withNextMd({ /* existing config */ }, {
 ## Package Structure
 
 ```
-next-md/
+site-md/
 ├── src/
 │   ├── index.ts              # Re-exports public APIs
 │   ├── types.ts              # All TypeScript interfaces
@@ -112,7 +112,7 @@ next-md/
 │       ├── app/
 │       │   ├── page.tsx
 │       │   ├── docs/page.tsx
-│       │   └── api/__next_md/[...path]/route.ts
+│       │   └── api/__site_md/[...path]/route.ts
 │       ├── proxy.ts
 │       ├── next.config.ts
 │       └── package.json
@@ -125,10 +125,10 @@ next-md/
 
 ### Package exports (tree-shakeable)
 
-- `next-md/proxy` — detection logic only (lightweight, Edge-compatible)
-- `next-md/handler` — conversion logic (jsdom, Readability, Turndown — Node.js only)
-- `next-md/config` — `withNextMd()` wrapper
-- `next-md` — re-exports everything
+- `site-md/proxy` — detection logic only (lightweight, Edge-compatible)
+- `site-md/handler` — conversion logic (jsdom, Readability, Turndown — Node.js only)
+- `site-md/config` — `withNextMd()` wrapper
+- `site-md` — re-exports everything
 
 ### Dependencies
 
@@ -162,7 +162,7 @@ interface DetectionResult {
 
 ### Cascade
 
-1. **Internal bypass** — check `x-next-md-internal` header against `NEXT_MD_BYPASS_SECRET`. If match → `{ detected: false }`.
+1. **Internal bypass** — check `x-site-md-internal` header against `SITE_MD_BYPASS_SECRET`. If match → `{ detected: false }`.
 2. **Passthrough check** — skip `/_next/*`, `/api/*`, `/static/*`, and all static file extensions (`.js`, `.css`, `.json`, `.xml`, `.txt`, `.map`, `.webmanifest`, `.png`, `.jpg`, `.svg`, `.woff2`, etc.) plus user-configured paths.
 3. **`/llms.txt` or `/llms-full.txt`** — exact path match.
 4. **`.md` suffix** — strip suffix, preserve full URL (basePath, query string, protocol, host). E.g. `/docs/setup.md?lang=en` → fetch `/docs/setup?lang=en`.
@@ -202,7 +202,7 @@ Default policy: all categories → `'markdown'`. Users override per-category in 
 ```
 Content-Type: text/markdown; charset=utf-8
 Vary: Accept, User-Agent
-X-Content-Source: next-md
+X-Content-Source: site-md
 ```
 
 ---
@@ -309,7 +309,7 @@ export interface NextMdConfig {
     cacheTTL?: number         // default: 3600
     maxPages?: number         // default: 100
   }
-  /** Internal route prefix (default: '__next_md') */
+  /** Internal route prefix (default: '__site_md') */
   internalRoutePrefix?: string
   /** Bypass secret (auto-generated by withNextMd, or set manually) */
   bypassSecret?: string
@@ -319,8 +319,8 @@ export interface NextMdConfig {
 ### Config Sharing Between Layers
 
 `withNextMd()` does two things at build time:
-1. Serializes config into `process.env.NEXT_MD_CONFIG` (RegExp stored as `{ source, flags }`)
-2. Generates a random bypass secret → `process.env.NEXT_MD_BYPASS_SECRET`
+1. Serializes config into `process.env.SITE_MD_CONFIG` (RegExp stored as `{ source, flags }`)
+2. Generates a random bypass secret → `process.env.SITE_MD_BYPASS_SECRET`
 
 Both proxy and handler read from these env vars. Explicit options passed to `createNextMdProxy()`/`createNextMdHandler()` override env config.
 

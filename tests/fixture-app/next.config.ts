@@ -1,4 +1,4 @@
-import { withNextMd } from "next-md/config";
+import { withNextMd } from "site-md/config";
 
 export default withNextMd(
   {
@@ -6,7 +6,7 @@ export default withNextMd(
   },
   {
     cacheTTL: 600,
-    internalRoutePrefix: "next_md",
+    internalRoutePrefix: "site_md",
     bots: {
       trainingScrapers: "block",
       searchCrawlers: "markdown",
@@ -14,7 +14,7 @@ export default withNextMd(
     },
     llmsTxt: {
       title: "Fixture App",
-      description: "Fixture site for next-md integration testing",
+      description: "Fixture site for site-md integration testing",
       pages: [
         { path: "/", title: "Home" },
         { path: "/docs", title: "Docs" },

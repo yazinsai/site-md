@@ -1,6 +1,6 @@
 import type { NextMdConfig, ResolvedNextMdConfig } from "./types";
 
-const DEFAULT_BYPASS_SECRET = "next-md-dev-default-secret";
+const DEFAULT_BYPASS_SECRET = "site-md-dev-default-secret";
 
 export const DEFAULT_PASSTHROUGH_PATTERNS = [
   "/_next/*",
@@ -111,18 +111,18 @@ function mergeConfig(base: NextMdConfig, extra: NextMdConfig): NextMdConfig {
 }
 
 export function resolveConfig(input?: NextMdConfig): ResolvedNextMdConfig {
-  const envConfig = parseEnvConfig(process.env.NEXT_MD_CONFIG);
+  const envConfig = parseEnvConfig(process.env.SITE_MD_CONFIG);
   const merged = mergeConfig(mergeConfig({}, envConfig ?? {}), input ?? {});
   const bypassSecret =
     merged.bypassSecret ||
-    process.env.NEXT_MD_BYPASS_SECRET ||
-    process.env.NEXT_MD_SECRET ||
+    process.env.SITE_MD_BYPASS_SECRET ||
+    process.env.SITE_MD_SECRET ||
     DEFAULT_BYPASS_SECRET;
 
   if (bypassSecret === DEFAULT_BYPASS_SECRET && process.env.NODE_ENV !== "test") {
     // eslint-disable-next-line no-console
     console.warn(
-      "[next-md] No NEXT_MD_BYPASS_SECRET configured. Using unsafe default secret.",
+      "[site-md] No SITE_MD_BYPASS_SECRET configured. Using unsafe default secret.",
     );
   }
 
@@ -147,7 +147,7 @@ export function resolveConfig(input?: NextMdConfig): ResolvedNextMdConfig {
       cacheTTL: merged.llmsTxt?.cacheTTL ?? 3600,
       maxPages: merged.llmsTxt?.maxPages ?? 100,
     },
-    internalRoutePrefix: merged.internalRoutePrefix ?? "__next_md",
+    internalRoutePrefix: merged.internalRoutePrefix ?? "__site_md",
     bypassSecret,
   };
 }

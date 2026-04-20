@@ -11,15 +11,15 @@ importers:
       next:
         specifier: ^15.5.15
         version: 15.5.15(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      next-md:
-        specifier: file:../..
-        version: file:../..(next@15.5.15(react-dom@19.2.5(react@19.2.5))(react@19.2.5))
       react:
         specifier: ^19.2.5
         version: 19.2.5
       react-dom:
         specifier: ^19.2.5
         version: 19.2.5(react@19.2.5)
+      site-md:
+        specifier: file:../..
+        version: file:../..(next@15.5.15(react-dom@19.2.5(react@19.2.5))(react@19.2.5))
     devDependencies:
       '@types/react':
         specifier: 19.2.14
@@ -427,11 +427,6 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  next-md@file:../..:
-    resolution: {directory: ../.., type: directory}
-    peerDependencies:
-      next: '>=14.0.0'
-
   next@15.5.15:
     resolution: {integrity: sha512-VSqCrJwtLVGwAVE0Sb/yikrQfkwkZW9p+lL/J4+xe+G3ZA+QnWPqgcfH1tDUEuk9y+pthzzVFp4L/U8JerMfMQ==}
     engines: {node: ^18.18.0 || ^19.8.0 || >= 20.0.0}
@@ -503,6 +498,11 @@ packages:
   sharp@0.34.5:
     resolution: {integrity: sha512-Ou9I5Ft9WNcCbXrU9cMgPBcCK8LiwLqcbywW3t4oDV37n1pzpuNLsYiAV8eODnjbtQlSDwZ2cUEeQz4E54Hltg==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
+
+  site-md@file:../..:
+    resolution: {directory: ../.., type: directory}
+    peerDependencies:
+      next: '>=14.0.0'
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -929,20 +929,6 @@ snapshots:
 
   nanoid@3.3.11: {}
 
-  next-md@file:../..(next@15.5.15(react-dom@19.2.5(react@19.2.5))(react@19.2.5)):
-    dependencies:
-      '@joplin/turndown-plugin-gfm': 1.0.64
-      '@mozilla/readability': 0.6.0
-      jsdom: 25.0.1
-      lru-cache: 11.3.5
-      next: 15.5.15(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      turndown: 7.2.4
-    transitivePeerDependencies:
-      - bufferutil
-      - canvas
-      - supports-color
-      - utf-8-validate
-
   next@15.5.15(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
     dependencies:
       '@next/env': 15.5.15
@@ -1035,6 +1021,20 @@ snapshots:
       '@img/sharp-win32-ia32': 0.34.5
       '@img/sharp-win32-x64': 0.34.5
     optional: true
+
+  site-md@file:../..(next@15.5.15(react-dom@19.2.5(react@19.2.5))(react@19.2.5)):
+    dependencies:
+      '@joplin/turndown-plugin-gfm': 1.0.64
+      '@mozilla/readability': 0.6.0
+      jsdom: 25.0.1
+      lru-cache: 11.3.5
+      next: 15.5.15(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      turndown: 7.2.4
+    transitivePeerDependencies:
+      - bufferutil
+      - canvas
+      - supports-color
+      - utf-8-validate
 
   source-map-js@1.2.1: {}
 

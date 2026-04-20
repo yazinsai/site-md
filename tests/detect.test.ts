@@ -15,7 +15,7 @@ function run(url: string, headers: Record<string, string> = {}) {
 
 describe("detectRequest", () => {
   it("ignores internal bypass requests", () => {
-    const result = run("https://example.com/docs", { "x-next-md-internal": "secret" });
+    const result = run("https://example.com/docs", { "x-site-md-internal": "secret" });
     expect(result.detected).toBe(false);
   });
 
