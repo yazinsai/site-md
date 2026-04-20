@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/yazinsai/site-md/main/assets/hero.jpg" alt="site-md converts your Next.js pages to clean Markdown for AI agents" width="100%" />
+  <img src="https://raw.githubusercontent.com/yazinsai/site-md/main/assets/hero.png" alt="site-md converts your Next.js pages to clean Markdown for AI agents" width="720" />
 </p>
 
 <h1 align="center">site-md</h1>
