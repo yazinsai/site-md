@@ -50,6 +50,13 @@
       "require": "./dist/config.cjs"
     }
   },
+  "typesVersions": {
+    "*": {
+      "proxy": ["./dist/proxy.d.ts"],
+      "handler": ["./dist/handler.d.ts"],
+      "config": ["./dist/config.d.ts"]
+    }
+  },
   "files": [
     "dist"
   ],
