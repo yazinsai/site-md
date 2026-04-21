@@ -1,6 +1,16 @@
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, extname, join, relative } from "node:path";
+
+const PKG_VERSION = (() => {
+  try {
+    return JSON.parse(
+      readFileSync(join(__dirname, "..", "package.json"), "utf8"),
+    ).version as string;
+  } catch {
+    return "";
+  }
+})();
 import * as p from "@clack/prompts";
 import pico from "picocolors";
 import { detectProject, installCommand } from "./detect";
@@ -47,7 +57,7 @@ async function main(): Promise<void> {
 
   if (!flags.yes) console.clear();
   p.intro(
-    `${pico.bgYellow(pico.black(" site-md "))} ${pico.dim("v0.2.0")}`,
+    `${pico.bgYellow(pico.black(" site-md "))} ${pico.dim(PKG_VERSION ? "v" + PKG_VERSION : "")}`,
   );
 
   p.log.message(
