@@ -112,6 +112,7 @@ async function main(): Promise<void> {
     installSpin.start(`Installing site-md via ${pico.cyan(project.pkgManager)}`);
     try {
       await runInstall(project);
+      for (const f of installedFiles(project)) written.push(f);
       installSpin.stop(
         `site-md installed via ${pico.cyan(project.pkgManager)}\n   ${pico.dim("↳ " + PURPOSE.install)}`,
       );
@@ -368,6 +369,25 @@ async function stepConfig(
   spin.stop(
     `${pico.green("✓")} Wrote ${rel}\n   ${pico.dim("↳ " + PURPOSE.config)}`,
   );
+}
+
+function installedFiles(project: ReturnType<typeof detectProject>): string[] {
+  const files = [join(project.root, "package.json")];
+  const lockfile = {
+    npm: "package-lock.json",
+    pnpm: "pnpm-lock.yaml",
+    yarn: "yarn.lock",
+    bun: "bun.lockb",
+  }[project.pkgManager];
+  if (lockfile) {
+    const path = join(project.root, lockfile);
+    if (existsSync(path)) files.push(path);
+    else if (project.pkgManager === "bun") {
+      const alt = join(project.root, "bun.lock");
+      if (existsSync(alt)) files.push(alt);
+    }
+  }
+  return files.filter((f) => existsSync(f));
 }
 
 async function maybeCommit(root: string, written: string[]): Promise<void> {
