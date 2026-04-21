@@ -14,8 +14,6 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/site-md"><img src="https://img.shields.io/npm/v/site-md.svg?style=flat-square&color=e9a94b&labelColor=171717" alt="npm version"></a>
-  <a href="https://www.npmjs.com/package/site-md"><img src="https://img.shields.io/npm/dm/site-md.svg?style=flat-square&color=8ab87a&labelColor=171717" alt="downloads"></a>
-  <a href="https://bundlephobia.com/package/site-md"><img src="https://img.shields.io/bundlephobia/minzip/site-md?style=flat-square&color=d97757&labelColor=171717&label=size" alt="bundle size"></a>
   <a href="https://www.npmjs.com/package/site-md"><img src="https://img.shields.io/npm/types/site-md.svg?style=flat-square&color=6a89b8&labelColor=171717" alt="types"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/npm/l/site-md.svg?style=flat-square&color=a8a29e&labelColor=171717" alt="MIT license"></a>
   <a href="https://github.com/yazinsai/site-md"><img src="https://img.shields.io/github/stars/yazinsai/site-md?style=flat-square&color=f0c14b&labelColor=171717" alt="github stars"></a>
