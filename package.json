@@ -1,6 +1,6 @@
 {
   "name": "site-md",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Serve clean markdown from Next.js pages for AI agents",
   "license": "MIT",
   "homepage": "https://github.com/yazinsai/site-md#readme",
