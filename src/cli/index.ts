@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, extname, join, relative } from "node:path";
 import * as p from "@clack/prompts";
 import pico from "picocolors";
@@ -9,6 +9,13 @@ import { mergeMiddleware } from "./merge-middleware";
 
 const ROUTE_FILE = `export { GET } from "site-md/handler";
 `;
+
+const PURPOSE = {
+  install: "adds the dependency",
+  middleware: "routes .md requests",
+  route: "serves /index.md",
+  config: "generates /llms.txt at build",
+} as const;
 
 interface Flags {
   title?: string;
@@ -41,6 +48,14 @@ async function main(): Promise<void> {
   if (!flags.yes) console.clear();
   p.intro(
     `${pico.bgYellow(pico.black(" site-md "))} ${pico.dim("v0.2.0")}`,
+  );
+
+  p.log.message(
+    [
+      `Adds a ${pico.cyan(".md")} variant to every page in your Next.js app,`,
+      `so AI agents can read your site without parsing HTML.`,
+      pico.dim("Also publishes /llms.txt so crawlers know what's available."),
+    ].join("\n"),
   );
 
   const project = await detect();
@@ -76,6 +91,8 @@ async function main(): Promise<void> {
     }
   }
 
+  const written: string[] = [];
+
   // 1. Install package
   const installSpin = p.spinner();
   if (process.env.SITE_MD_SKIP_INSTALL) {
@@ -85,7 +102,9 @@ async function main(): Promise<void> {
     installSpin.start(`Installing site-md via ${pico.cyan(project.pkgManager)}`);
     try {
       await runInstall(project);
-      installSpin.stop(`site-md installed via ${pico.cyan(project.pkgManager)}`);
+      installSpin.stop(
+        `site-md installed via ${pico.cyan(project.pkgManager)}\n   ${pico.dim("↳ " + PURPOSE.install)}`,
+      );
     } catch (err) {
       installSpin.stop(pico.red("Install failed"), 1);
       p.log.error((err as Error).message);
@@ -94,13 +113,18 @@ async function main(): Promise<void> {
   }
 
   // 2. Middleware
-  await stepMiddleware(project);
+  await stepMiddleware(project, written);
 
   // 3. Route
-  await stepRoute(project);
+  await stepRoute(project, written);
 
   // 4. next.config
-  await stepConfig(project, { title, description });
+  await stepConfig(project, { title, description }, written);
+
+  // 5. Git commit
+  if (!flags.yes) {
+    await maybeCommit(project.root, written);
+  }
 
   const dev = devCommand(project.pkgManager);
   p.outro(
@@ -111,6 +135,8 @@ async function main(): Promise<void> {
       "  " + pico.cyan(`${dev}`),
       "  " + pico.cyan("curl http://localhost:3000/index.md"),
       "  " + pico.cyan("curl http://localhost:3000/llms.txt"),
+      "",
+      happyAgent(),
       "",
       pico.dim("Docs: https://github.com/yazinsai/site-md"),
     ].join("\n"),
@@ -178,8 +204,15 @@ Docs: https://github.com/yazinsai/site-md
 
 function planActions(project: ReturnType<typeof detectProject>): string[] {
   const lines: string[] = [];
+  const render = (verb: string, path: string, purpose: string) =>
+    `${verb} ${path}\n           ${pico.dim("↳ " + purpose)}`;
+
   lines.push(
-    `${pico.cyan("install")}   site-md via ${project.pkgManager}`,
+    render(
+      pico.cyan("install  "),
+      `site-md via ${project.pkgManager}`,
+      PURPOSE.install,
+    ),
   );
   const relMiddleware = project.middlewarePath
     ? relative(project.root, project.middlewarePath)
@@ -191,23 +224,36 @@ function planActions(project: ReturnType<typeof detectProject>): string[] {
         ),
       );
   lines.push(
-    `${project.middlewarePath ? pico.yellow("merge    ") : pico.green("write    ")} ${relMiddleware}`,
+    render(
+      project.middlewarePath ? pico.yellow("merge    ") : pico.green("write    "),
+      relMiddleware,
+      PURPOSE.middleware,
+    ),
   );
   const routeFile = join(project.routeDir, "route.ts");
   lines.push(
-    `${pico.green("write    ")} ${relative(project.root, routeFile)}`,
+    render(
+      pico.green("write    "),
+      relative(project.root, routeFile),
+      PURPOSE.route,
+    ),
   );
   const cfgRel = project.configPath
     ? relative(project.root, project.configPath)
     : "next.config.mjs";
   lines.push(
-    `${project.configPath ? pico.yellow("merge    ") : pico.green("write    ")} ${cfgRel}`,
+    render(
+      project.configPath ? pico.yellow("merge    ") : pico.green("write    "),
+      cfgRel,
+      PURPOSE.config,
+    ),
   );
   return lines;
 }
 
 async function stepMiddleware(
   project: ReturnType<typeof detectProject>,
+  written: string[],
 ): Promise<void> {
   const spin = p.spinner();
   const targetPath =
@@ -240,25 +286,31 @@ async function stepMiddleware(
     return;
   }
   writeFile(targetPath, result.source);
+  written.push(targetPath);
   spin.stop(
-    `${pico.green("✓")} ${result.kind === "fresh" ? "Wrote" : "Merged"} ${rel}`,
+    `${pico.green("✓")} ${result.kind === "fresh" ? "Wrote" : "Merged"} ${rel}\n   ${pico.dim("↳ " + PURPOSE.middleware)}`,
   );
 }
 
 async function stepRoute(
   project: ReturnType<typeof detectProject>,
+  written: string[],
 ): Promise<void> {
   const spin = p.spinner();
   const targetPath = join(project.routeDir, "route.ts");
   const rel = relative(project.root, targetPath);
   spin.start(`Writing ${rel}`);
   writeFile(targetPath, ROUTE_FILE);
-  spin.stop(`${pico.green("✓")} Wrote ${rel}`);
+  written.push(targetPath);
+  spin.stop(
+    `${pico.green("✓")} Wrote ${rel}\n   ${pico.dim("↳ " + PURPOSE.route)}`,
+  );
 }
 
 async function stepConfig(
   project: ReturnType<typeof detectProject>,
   opts: { title: string; description: string },
+  written: string[],
 ): Promise<void> {
   const spin = p.spinner();
   if (!project.configPath) {
@@ -266,7 +318,10 @@ async function stepConfig(
     const rel = relative(project.root, targetPath);
     spin.start(`Writing ${rel}`);
     writeFile(targetPath, freshConfig("mjs", opts));
-    spin.stop(`${pico.green("✓")} Wrote ${rel}`);
+    written.push(targetPath);
+    spin.stop(
+      `${pico.green("✓")} Wrote ${rel}\n   ${pico.dim("↳ " + PURPOSE.config)}`,
+    );
     return;
   }
   const rel = relative(project.root, project.configPath);
@@ -292,12 +347,66 @@ async function stepConfig(
   }
   if (result.kind === "merged") {
     writeFile(project.configPath, result.source);
-    spin.stop(`${pico.green("✓")} Merged ${rel}`);
+    written.push(project.configPath);
+    spin.stop(
+      `${pico.green("✓")} Merged ${rel}\n   ${pico.dim("↳ " + PURPOSE.config)}`,
+    );
     return;
   }
-  // fresh path shouldn't trigger when configPath exists
   writeFile(project.configPath, freshConfig(ext === "cjs" ? "js" : ext, opts));
-  spin.stop(`${pico.green("✓")} Wrote ${rel}`);
+  written.push(project.configPath);
+  spin.stop(
+    `${pico.green("✓")} Wrote ${rel}\n   ${pico.dim("↳ " + PURPOSE.config)}`,
+  );
+}
+
+async function maybeCommit(root: string, written: string[]): Promise<void> {
+  if (written.length === 0) return;
+  if (!isGitRepo(root)) return;
+
+  const doCommit = await p.confirm({
+    message: "Commit these changes?",
+    initialValue: true,
+  });
+  if (p.isCancel(doCommit) || !doCommit) return;
+
+  const spin = p.spinner();
+  spin.start("Creating commit");
+  try {
+    await git(root, ["add", "--", ...written]);
+    await git(root, ["commit", "-m", "chore: set up site-md"]);
+    spin.stop(`${pico.green("✓")} Committed ${written.length} file${written.length === 1 ? "" : "s"}`);
+  } catch (err) {
+    spin.stop(pico.yellow("! Commit skipped"), 1);
+    p.log.warn((err as Error).message);
+  }
+}
+
+function isGitRepo(root: string): boolean {
+  return existsSync(join(root, ".git"));
+}
+
+function git(cwd: string, args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn("git", args, { cwd, stdio: "ignore" });
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`git ${args[0]} exited with code ${code}`));
+    });
+  });
+}
+
+function happyAgent(): string {
+  const body = (s: string) => pico.bgYellow(pico.black(s));
+  return [
+    pico.dim("  your site is now agent-readable"),
+    "",
+    "     " + body("            "),
+    "     " + body("   ●    ●   "),
+    "     " + body("    ‿‿‿‿    ") + pico.dim("  ♥ .md"),
+    "     " + body("            "),
+  ].join("\n");
 }
 
 function writeFile(path: string, contents: string): void {
