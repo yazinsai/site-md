@@ -54,6 +54,52 @@ async function mapLimited<T, R>(
   return results;
 }
 
+function pathToTitle(path: string): string {
+  if (path === "/" || path === "") return "Home";
+  const segments = path.split("/").filter(Boolean);
+  const last = segments[segments.length - 1] ?? "";
+  const cleaned = last.replace(/\.(html?|md)$/i, "");
+  if (!cleaned) return "Home";
+  return cleaned
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join(" ");
+}
+
+async function fetchSitemapPages(params: {
+  baseUrl: string;
+  config: ResolvedNextMdConfig;
+  fetchImpl: typeof fetch;
+}): Promise<LlmsPage[]> {
+  const sitemapUrl = new URL(params.config.llmsTxt.sitemapUrl, params.baseUrl).toString();
+  try {
+    const response = await withTimeout(
+      params.fetchImpl(sitemapUrl, {
+        headers: { accept: "application/xml,text/xml;q=0.9,*/*;q=0.1" },
+      }),
+      5_000,
+    );
+    if (!response.ok) return [];
+    const xml = await response.text();
+    const urls = parseSitemap(xml).slice(0, params.config.llmsTxt.maxPages);
+    const origin = new URL(params.baseUrl).origin;
+    return urls
+      .map((u) => {
+        try {
+          const parsed = new URL(u);
+          if (parsed.origin !== origin) return undefined;
+          return { path: parsed.pathname, title: pathToTitle(parsed.pathname) };
+        } catch {
+          return undefined;
+        }
+      })
+      .filter((p): p is LlmsPage => p !== undefined);
+  } catch {
+    return [];
+  }
+}
+
 export async function generateLlmsTxt(params: {
   baseUrl: string;
   config: ResolvedNextMdConfig;
@@ -61,7 +107,8 @@ export async function generateLlmsTxt(params: {
 }): Promise<string> {
   const title = params.config.llmsTxt.title ?? new URL(params.baseUrl).hostname;
   const description = params.config.llmsTxt.description;
-  const pages = params.config.llmsTxt.pages ?? [];
+  const configured = params.config.llmsTxt.pages;
+  const pages = configured?.length ? configured : await fetchSitemapPages(params);
 
   const lines = [`# ${title}`, ""];
   if (description) {

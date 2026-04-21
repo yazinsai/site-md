@@ -5,6 +5,7 @@ import { detectRequest } from "./detect";
 import { generateLlmsFullTxt, generateLlmsTxt } from "./llms-txt";
 import type { HandlerDeps, NextMdConfig } from "./types";
 
+let llmsTxtCache: { value: string; expiresAt: number } | undefined;
 let llmsFullCache: { value: string; expiresAt: number } | undefined;
 
 function markdownResponse(markdown: string, status = 200): Response {
@@ -53,11 +54,19 @@ export function createNextMdHandler(configInput?: NextMdConfig, deps?: HandlerDe
     });
 
     if (detection.method === "llms-txt") {
+      const expiry = llmsTxtCache?.expiresAt ?? 0;
+      if (llmsTxtCache && now() < expiry) {
+        return markdownResponse(llmsTxtCache.value);
+      }
       const body = await generateLlmsTxt({
         baseUrl: url.origin,
         config,
         fetchImpl,
       });
+      llmsTxtCache = {
+        value: body,
+        expiresAt: now() + config.llmsTxt.cacheTTL * 1000,
+      };
       return markdownResponse(body);
     }
 
