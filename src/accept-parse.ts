@@ -61,9 +61,21 @@ export function qualityForMediaType(
   return best < 0 ? 0 : best;
 }
 
+function explicitIndex(entries: AcceptEntry[], mediaType: string): number {
+  const target = mediaType.toLowerCase();
+  const idx = entries.findIndex((entry) => entry.mediaType === target);
+  return idx < 0 ? Infinity : idx;
+}
+
 export function prefersMarkdownOverHtml(accept: string | null): boolean {
   const entries = parseAcceptHeader(accept);
   const mdQ = qualityForMediaType(entries, "text/markdown");
   const htmlQ = qualityForMediaType(entries, "text/html");
-  return mdQ > htmlQ;
+  if (mdQ > htmlQ) return true;
+  if (mdQ < htmlQ) return false;
+
+  const mdIdx = explicitIndex(entries, "text/markdown");
+  if (mdIdx === Infinity) return false;
+  const htmlIdx = explicitIndex(entries, "text/html");
+  return mdIdx < htmlIdx;
 }

@@ -168,7 +168,7 @@ interface DetectionResult {
 4. **`.md` suffix** — strip suffix, preserve full URL (basePath, query string, protocol, host). E.g. `/docs/setup.md?lang=en` → fetch `/docs/setup?lang=en`.
 5. **`?format=md`** — strip `format` param, preserve rest of query string. E.g. `/page?format=md&lang=en` → fetch `/page?lang=en`.
 6. **User-Agent regex** — match against bot patterns grouped by category. Look up category → config action (`markdown`/`block`/`passthrough`). Return the action.
-7. **Accept header** — RFC 7231 quality-value parsing. Markdown only if `text/markdown` q-value strictly > `text/html` q-value. `Accept: */*` alone → HTML.
+7. **Accept header** — RFC 7231 quality-value parsing. Markdown if `text/markdown` q-value > `text/html` q-value, or if q-values tie and `text/markdown` is listed explicitly before `text/html` (or html is absent). `Accept: */*` alone → HTML.
 8. **No match** → `{ detected: false, method: 'none' }`
 
 ### Bot Categories (`src/bot-patterns.ts`)

@@ -4,7 +4,7 @@ export const BOT_CATEGORIES: Record<BotCategory, RegExp> = {
   training:
     /GPTBot|Bytespider|CCBot|meta-externalagent|Google-Extended|Applebot-Extended|Amazonbot|FacebookBot/i,
   search: /OAI-SearchBot|PerplexityBot|YouBot/i,
-  userAgent: /ChatGPT-User|Perplexity-User|Claude-SearchTool/i,
+  userAgent: /ChatGPT-User|Perplexity-User|Claude-SearchTool|Claude-User|claude-code\//i,
 };
 
 export function mergeBotPatterns(input: {

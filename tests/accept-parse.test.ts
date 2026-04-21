@@ -20,6 +20,17 @@ describe("accept parser", () => {
 
   it("detects markdown preference strictly greater than html", () => {
     expect(prefersMarkdownOverHtml("text/markdown;q=0.9,text/html;q=0.8")).toBe(true);
-    expect(prefersMarkdownOverHtml("text/markdown;q=0.8,text/html;q=0.8")).toBe(false);
+    expect(prefersMarkdownOverHtml("text/html;q=0.9,text/markdown;q=0.8")).toBe(false);
+  });
+
+  it("breaks equal-q ties by explicit listing order", () => {
+    expect(prefersMarkdownOverHtml("text/markdown, text/html, */*")).toBe(true);
+    expect(prefersMarkdownOverHtml("text/html, text/markdown, */*")).toBe(false);
+    expect(prefersMarkdownOverHtml("text/markdown, */*")).toBe(true);
+  });
+
+  it("does not treat bare wildcards as a markdown preference", () => {
+    expect(prefersMarkdownOverHtml("*/*")).toBe(false);
+    expect(prefersMarkdownOverHtml("text/html")).toBe(false);
   });
 });

@@ -57,6 +57,16 @@ describe("detectRequest", () => {
     expect(result.detected).toBe(true);
   });
 
+  it("detects Claude Code's user-agent as userAgent category", () => {
+    const result = run("https://example.com/", {
+      "user-agent":
+        "Claude-User (claude-code/2.1.116; +https://support.anthropic.com/)",
+    });
+    expect(result.method).toBe("user-agent");
+    expect(result.botCategory).toBe("userAgent");
+    expect(result.action).toBe("markdown");
+  });
+
   it("returns passthrough for normal html traffic", () => {
     const result = run("https://example.com/");
     expect(result.detected).toBe(false);
