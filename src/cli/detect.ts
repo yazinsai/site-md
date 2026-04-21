@@ -10,6 +10,7 @@ export interface ProjectInfo {
   nextVersion: string | null;
   middlewarePath: string | null;
   configPath: string | null;
+  configWrapped: boolean;
   routeDir: string;
 }
 
@@ -47,6 +48,10 @@ export function detectProject(cwd: string): ProjectInfo {
   ]);
   const routeDir = join(base, "app", "api", "site-md", "[...path]");
 
+  const configWrapped = configPath
+    ? /site-md\/config/.test(readFileSync(configPath, "utf8"))
+    : false;
+
   return {
     root,
     pkgManager,
@@ -54,6 +59,7 @@ export function detectProject(cwd: string): ProjectInfo {
     nextVersion,
     middlewarePath,
     configPath,
+    configWrapped,
     routeDir,
   };
 }

@@ -14,7 +14,7 @@ const PKG_VERSION = (() => {
 import * as p from "@clack/prompts";
 import pico from "picocolors";
 import { detectProject, installCommand } from "./detect";
-import { freshConfig, mergeConfig } from "./merge-config";
+import { extractLlmsTxtOpts, freshConfig, mergeConfig, updateLlmsTxt } from "./merge-config";
 import { mergeMiddleware } from "./merge-middleware";
 
 const ROUTE_FILE = `export { GET } from "site-md/handler";
@@ -71,13 +71,17 @@ async function main(): Promise<void> {
   const project = await detect();
   if (!project) return;
 
+  const existing = project.configPath
+    ? extractLlmsTxtOpts(readFileSync(project.configPath, "utf8"))
+    : {};
+
   let title: string;
   let description: string;
   if (flags.title && flags.description) {
     title = flags.title;
     description = flags.description;
   } else {
-    const answers = await askLlms(flags);
+    const answers = await askLlms(flags, existing);
     if (p.isCancel(answers.title) || p.isCancel(answers.description)) {
       p.cancel("Setup cancelled.");
       process.exit(0);
@@ -171,24 +175,28 @@ async function detect() {
   }
 }
 
-async function askLlms(flags: Flags) {
+async function askLlms(flags: Flags, existing: { title?: string; description?: string }) {
+  const titleDefault = existing.title ?? "My Site";
+  const descriptionDefault = existing.description ?? "Public docs for AI agents";
   const title =
     flags.title ??
     (await p.text({
       message: "What's your site called?",
-      placeholder: "My Site",
-      defaultValue: "My Site",
+      placeholder: titleDefault,
+      defaultValue: titleDefault,
+      initialValue: existing.title,
     }));
   const description =
     flags.description ??
     (await p.text({
       message: "One-line description (for /llms.txt)",
-      placeholder: "Public docs for AI agents",
-      defaultValue: "Public docs for AI agents",
+      placeholder: descriptionDefault,
+      defaultValue: descriptionDefault,
+      initialValue: existing.description,
     }));
   return {
-    title: (title as string) ?? "My Site",
-    description: (description as string) ?? "Public docs for AI agents",
+    title: (title as string) ?? titleDefault,
+    description: (description as string) ?? descriptionDefault,
   };
 }
 
@@ -252,13 +260,12 @@ function planActions(project: ReturnType<typeof detectProject>): string[] {
   const cfgRel = project.configPath
     ? relative(project.root, project.configPath)
     : "next.config.mjs";
-  lines.push(
-    render(
-      project.configPath ? pico.yellow("merge    ") : pico.green("write    "),
-      cfgRel,
-      PURPOSE.config,
-    ),
-  );
+  const cfgVerb = !project.configPath
+    ? pico.green("write    ")
+    : project.configWrapped
+      ? pico.yellow("refresh  ")
+      : pico.yellow("merge    ");
+  lines.push(render(cfgVerb, cfgRel, PURPOSE.config));
   return lines;
 }
 
@@ -345,6 +352,15 @@ async function stepConfig(
     | "cjs";
   const result = mergeConfig(existing, opts);
   if (result.kind === "already-wrapped") {
+    const update = updateLlmsTxt(existing, opts);
+    if (update.kind === "updated") {
+      writeFile(project.configPath, update.source);
+      written.push(project.configPath);
+      spin.stop(
+        `${pico.green("✓")} Updated ${rel}\n   ${pico.dim("↳ title/description refreshed")}`,
+      );
+      return;
+    }
     spin.stop(`${pico.dim("↷")} ${rel} ${pico.dim("(already wrapped)")}`);
     return;
   }

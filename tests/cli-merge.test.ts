@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mergeConfig } from "../src/cli/merge-config";
+import { extractLlmsTxtOpts, mergeConfig, updateLlmsTxt } from "../src/cli/merge-config";
 import { mergeMiddleware } from "../src/cli/merge-middleware";
 
 describe("mergeMiddleware", () => {
@@ -122,5 +122,55 @@ export default withBundleAnalyzer({
     expect(r.kind).toBe("merged");
     if (r.kind !== "merged") return;
     expect(r.source).toContain("withNextMd(withBundleAnalyzer({");
+  });
+});
+
+describe("extractLlmsTxtOpts", () => {
+  it("pulls title and description from wrapped config", () => {
+    const src = `import { withNextMd } from "site-md/config";
+export default withNextMd({}, {
+  llmsTxt: { title: "yaz.in", description: "Yazin's blog" },
+});
+`;
+    expect(extractLlmsTxtOpts(src)).toEqual({
+      title: "yaz.in",
+      description: "Yazin's blog",
+    });
+  });
+
+  it("returns empty when config is not wrapped", () => {
+    const src = `export default { reactStrictMode: true };`;
+    expect(extractLlmsTxtOpts(src)).toEqual({});
+  });
+});
+
+describe("updateLlmsTxt", () => {
+  it("updates only properties whose values changed", () => {
+    const src = `import { withNextMd } from "site-md/config";
+export default withNextMd({}, {
+  llmsTxt: { title: "Old Title", description: "Same" },
+});
+`;
+    const r = updateLlmsTxt(src, { title: "New Title", description: "Same" });
+    expect(r.kind).toBe("updated");
+    if (r.kind !== "updated") return;
+    expect(r.source).toContain('title: "New Title"');
+    expect(r.source).toContain('description: "Same"');
+  });
+
+  it("returns unchanged when values match", () => {
+    const src = `import { withNextMd } from "site-md/config";
+export default withNextMd({}, {
+  llmsTxt: { title: "Same", description: "Same" },
+});
+`;
+    const r = updateLlmsTxt(src, { title: "Same", description: "Same" });
+    expect(r.kind).toBe("unchanged");
+  });
+
+  it("returns not-wrapped for unwrapped configs", () => {
+    const src = `export default { reactStrictMode: true };`;
+    const r = updateLlmsTxt(src, { title: "x", description: "y" });
+    expect(r.kind).toBe("not-wrapped");
   });
 });

@@ -46,6 +46,139 @@ function buildLlmsTxtText(opts: LlmsTxtOpts): string {
   }`;
 }
 
+export type UpdateResult =
+  | { kind: "unchanged" }
+  | { kind: "updated"; source: string }
+  | { kind: "not-wrapped" };
+
+export function updateLlmsTxt(existing: string, opts: LlmsTxtOpts): UpdateResult {
+  let ast: t.File;
+  try {
+    ast = parse(existing);
+  } catch {
+    return { kind: "not-wrapped" };
+  }
+  const call = findWithNextMdCall(ast);
+  if (!call) return { kind: "not-wrapped" };
+
+  let optsArg = call.arguments[1];
+  if (!optsArg || !t.isObjectExpression(optsArg)) {
+    optsArg = t.objectExpression([]);
+    call.arguments[1] = optsArg;
+  }
+
+  let llmsTxtProp = (optsArg as t.ObjectExpression).properties.find(
+    (p): p is t.ObjectProperty =>
+      t.isObjectProperty(p) &&
+      !p.computed &&
+      ((t.isIdentifier(p.key) && p.key.name === "llmsTxt") ||
+        (t.isStringLiteral(p.key) && p.key.value === "llmsTxt")),
+  );
+  if (!llmsTxtProp) {
+    llmsTxtProp = t.objectProperty(t.identifier("llmsTxt"), t.objectExpression([]));
+    (optsArg as t.ObjectExpression).properties.push(llmsTxtProp);
+  }
+  if (!t.isObjectExpression(llmsTxtProp.value)) {
+    return { kind: "not-wrapped" };
+  }
+
+  let changed = false;
+  if (opts.title !== undefined) {
+    changed = setStringProp(llmsTxtProp.value, "title", opts.title) || changed;
+  }
+  if (opts.description !== undefined) {
+    changed = setStringProp(llmsTxtProp.value, "description", opts.description) || changed;
+  }
+  if (!changed) return { kind: "unchanged" };
+  return { kind: "updated", source: print(ast) };
+}
+
+function setStringProp(obj: t.ObjectExpression, name: string, value: string): boolean {
+  for (const p of obj.properties) {
+    if (!t.isObjectProperty(p) || p.computed) continue;
+    const matches =
+      (t.isIdentifier(p.key) && p.key.name === name) ||
+      (t.isStringLiteral(p.key) && p.key.value === name);
+    if (!matches) continue;
+    if (t.isStringLiteral(p.value) && p.value.value === value) return false;
+    p.value = t.stringLiteral(value);
+    return true;
+  }
+  obj.properties.push(t.objectProperty(t.identifier(name), t.stringLiteral(value)));
+  return true;
+}
+
+export function extractLlmsTxtOpts(existing: string): LlmsTxtOpts {
+  let ast: t.File;
+  try {
+    ast = parse(existing);
+  } catch {
+    return {};
+  }
+
+  const call = findWithNextMdCall(ast);
+  if (!call) return {};
+  const optsArg = call.arguments[1];
+  if (!optsArg || !t.isObjectExpression(optsArg)) return {};
+
+  const llmsTxtProp = optsArg.properties.find(
+    (p): p is t.ObjectProperty =>
+      t.isObjectProperty(p) &&
+      !p.computed &&
+      ((t.isIdentifier(p.key) && p.key.name === "llmsTxt") ||
+        (t.isStringLiteral(p.key) && p.key.value === "llmsTxt")),
+  );
+  if (!llmsTxtProp || !t.isObjectExpression(llmsTxtProp.value)) return {};
+
+  return {
+    title: readStringProp(llmsTxtProp.value, "title"),
+    description: readStringProp(llmsTxtProp.value, "description"),
+  };
+}
+
+function readStringProp(obj: t.ObjectExpression, name: string): string | undefined {
+  for (const p of obj.properties) {
+    if (!t.isObjectProperty(p) || p.computed) continue;
+    const matches =
+      (t.isIdentifier(p.key) && p.key.name === name) ||
+      (t.isStringLiteral(p.key) && p.key.value === name);
+    if (!matches) continue;
+    if (t.isStringLiteral(p.value)) return p.value.value;
+    return undefined;
+  }
+  return undefined;
+}
+
+function findWithNextMdCall(ast: t.File): t.CallExpression | null {
+  let found: t.CallExpression | null = null;
+  const visit = (node: t.Node | null | undefined): void => {
+    if (!node || found) return;
+    if (
+      t.isCallExpression(node) &&
+      t.isIdentifier(node.callee, { name: "withNextMd" })
+    ) {
+      found = node;
+      return;
+    }
+    for (const key of Object.keys(node)) {
+      const value = (node as unknown as Record<string, unknown>)[key];
+      if (Array.isArray(value)) {
+        for (const child of value) {
+          if (child && typeof child === "object" && "type" in (child as object)) {
+            visit(child as t.Node);
+            if (found) return;
+          }
+        }
+      } else if (value && typeof value === "object" && "type" in (value as object)) {
+        visit(value as t.Node);
+        if (found) return;
+      }
+    }
+  };
+  visit(ast);
+  return found;
+}
+
 export function mergeConfig(
   existing: string,
   opts: LlmsTxtOpts,
